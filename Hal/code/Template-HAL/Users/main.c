@@ -1,3 +1,8 @@
+/*
+	A manual build tamplate project with HAL lib
+	Experimental phenomenon：
+		The LED DS0(PA8) and DS1(PD2) flash in turn
+*/
 #include "./SYSTEM/sys/sys.h"
 #include "./SYSTEM/usart/usart.h"
 #include "./SYSTEM/delay/delay.h"
