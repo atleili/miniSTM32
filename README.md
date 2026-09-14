@@ -1,11 +1,4 @@
-基于STM32不完全手册
-
-- V1.01（HAL库版）
-- V3.3（标准库版）
-
-- V3.3（寄存器版） 
-
-> 使用ALIENTEK MiniSTM开发板
+> 使用ALIENTEK MiniSTM开发板（v3.4版本）
 
 仓库概述：
 
