@@ -4,4 +4,4 @@
 
 - `Template-HAL`：A manual build tamplate project with HAL lib
 
-`datas/`：Some necessary files and doc of HAL lib
+`datas/`：Some necessary files and references of HAL lib
