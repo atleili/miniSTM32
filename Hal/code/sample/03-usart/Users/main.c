@@ -1,6 +1,8 @@
 /*
 	A sample project of usart1
     When use self written usart1, you should disable usart in Driver/SYSTEM/usart/usart.h
+    This sample keeps the MCU listening the port of uart1, if any instruction with "\n" in the end, 
+    it will be regard as a complete instruction and be sent back from uart1 without the "\n" end.
 */
 /**
  * @note STM32F1最多支持5路串口，其中3个USART和两个UART
