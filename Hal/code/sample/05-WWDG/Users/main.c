@@ -1,13 +1,10 @@
 /*
-	A sample project of IWDG
-    In this sample KEY0 is used to feed the IWDG, if KEY0 is not pressed, the IWDG will be reset
-    and the LED0 will be reset to off when MCU reset,after 1s, LED0 will be turned on. So, if the IWDG
-    can't be feed, the LED0 will be in a flashing state.
+	A sample project of WWDG
+    In this project, the WWDG will be feed by the interrupt service function of WWDG.
+    The LED0 is on first and then will be off when turn into the main dead loop.
+    The LED1 will be toggled once the WWDG is fed, so it will flash with a relatively high frequency.
 */
-/**
- * @note STM32F1最多支持5路串口，其中3个USART和两个UART
- *      USART1时钟源来源于APB2，最高频率72Mhz，其他串口来源于APB1，最高36Mhz
- */
+
 #include "stm32f1xx_hal.h"
 #include "./SYSTEM/sys/sys.h"
 #include "./SYSTEM/usart/usart.h"
@@ -16,10 +13,9 @@
 #include "led.h"
 #include "key.h"
 
-IWDG_HandleTypeDef g_iwdg_handle;   /* 独立看门狗句柄 */
+WWDG_HandleTypeDef g_wwdg_handle;   /* 窗口看门狗句柄 */
 
-void iwdg_init(uint8_t prer, uint16_t reload);
-void iwdg_feed(void);
+void wwdg_init(uint8_t prerscaler, uint8_t window, uint8_t counter);
 
 int main(void)
 {
@@ -27,32 +23,52 @@ int main(void)
     sys_stm32_clock_init(RCC_PLL_MUL9);     /* 设置时钟, 72Mhz */
     delay_init(72);                         /* 延时初始化 */
     BSP_LED_Init();
-    BSP_KEY_Init();
-    delay_ms(1000); /* LED0初始化时为熄灭状态，延时1s从而在看门狗不断溢出时可以表现为闪烁状态 */
-    BSP_LED0_ON(); /* 点亮LED0 */
-    iwdg_init(IWDG_PRESCALER_64, 625);   /* 初始化独立看门狗, 溢出时间 = 64 * 625 / 40kHz = 1s */
+    BSP_LED0_ON();
+    delay_ms(300);
+    wwdg_init(WWDG_PRESCALER_8, 0x5F, 0x7F);             /* 初始化窗口看门狗(这里把十六进制数(unsigned int)传参给uint8_t类型，产生截断警告，问题不大) */
     while (1){
-        /* 如果KEY0按下，则喂狗 */
-        if(BSP_KEY0 == BSP_KEY0_PRESSED){
-            iwdg_feed();
-        }
-        delay_ms(10);
+        BSP_LED0_OFF();
     }
 }
 
 /**
- * @brief 初始化独立看门狗
- * @note IWDG时钟源来源于低速内部时钟(LSI)，频率40KHz
- * @param prer 预分频系数
- * @param reload 重装载值
+ * @brief  窗口看门狗初始化
+ * @param  prerscaler: 预分配系数
+ * @param  window: 窗口值
+ * @param  counter: 计数值
+ * @note   窗口看门狗
  */
-void iwdg_init(uint8_t prer, uint16_t reload){
-    g_iwdg_handle.Instance = IWDG;
-    g_iwdg_handle.Init.Prescaler = prer;
-    g_iwdg_handle.Init.Reload    = reload;
-    HAL_IWDG_Init(&g_iwdg_handle);
+void wwdg_init(uint8_t prerscaler, uint8_t window, uint8_t counter){
+    g_wwdg_handle.Instance = WWDG;
+    g_wwdg_handle.Init.Prescaler = prerscaler;          /* 预分配系数 */
+    g_wwdg_handle.Init.Window = window;                 /* 窗口值 */
+    g_wwdg_handle.Init.Counter = counter;               /* 计数值 */
+    g_wwdg_handle.Init.EWIMode = WWDG_EWI_ENABLE;       /* 窗口看门狗提前唤醒中断 */
+    HAL_WWDG_Init(&g_wwdg_handle);                      /* 初始化并开始WWDG */
 }
 
-void iwdg_feed(void){
-    HAL_IWDG_Refresh(&g_iwdg_handle);
+/**
+ * @brief  开启窗口看门狗提前唤醒中断后，通过重写该底层初始化函数初始化WWDG中断
+ */
+void HAL_WWDG_MspInit(WWDG_HandleTypeDef* wwdgHandle){
+    __HAL_RCC_WWDG_CLK_ENABLE();
+    HAL_NVIC_SetPriority(WWDG_IRQn, 2, 3);
+    HAL_NVIC_EnableIRQ(WWDG_IRQn);
+}
+
+/**
+ * @brief  窗口看门狗中断服务函数
+ */
+void WWDG_IRQHandler(void){
+    HAL_WWDG_IRQHandler(&g_wwdg_handle);
+}
+
+/**
+ * @brief  窗口看门狗提前唤醒中断回调函数
+ */
+void HAL_WWDG_EarlyWakeupCallback(WWDG_HandleTypeDef *hwwdg){
+    /* 喂狗 */
+    HAL_WWDG_Refresh(&g_wwdg_handle);
+    /* 翻转LED1 */
+    BSP_LED1_TOGGLE();
 }

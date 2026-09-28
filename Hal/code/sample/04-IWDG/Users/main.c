@@ -4,10 +4,7 @@
     and the LED0 will be reset to off when MCU reset,after 1s, LED0 will be turned on. So, if the IWDG
     can't be feed, the LED0 will be in a flashing state.
 */
-/**
- * @note STM32F1最多支持5路串口，其中3个USART和两个UART
- *      USART1时钟源来源于APB2，最高频率72Mhz，其他串口来源于APB1，最高36Mhz
- */
+
 #include "stm32f1xx_hal.h"
 #include "./SYSTEM/sys/sys.h"
 #include "./SYSTEM/usart/usart.h"
@@ -53,6 +50,7 @@ void iwdg_init(uint8_t prer, uint16_t reload){
     HAL_IWDG_Init(&g_iwdg_handle);
 }
 
+/* 喂狗 */
 void iwdg_feed(void){
     HAL_IWDG_Refresh(&g_iwdg_handle);
 }
